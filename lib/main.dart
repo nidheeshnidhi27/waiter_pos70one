@@ -17,10 +17,11 @@ class JooposApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'JOOPOS',
+      title: 'pos70one',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
+      debugShowCheckedModeBanner: false,
       home: const WebShell(),
     );
   }
@@ -675,25 +676,63 @@ class _WebShellState extends State<WebShell> {
             WebViewWidget(controller: _controller),
             if (_showUrlBar)
               Container(
-                padding: const EdgeInsets.all(8),
+                width: double.infinity,
+                height: double.infinity,
                 color: Colors.black.withOpacity(0.7),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _urlController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          hintText: 'https://',
-                          hintStyle: TextStyle(color: Colors.white70),
-                          border: OutlineInputBorder(),
-                        ),
-                        onSubmitted: (_) => _go(),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/logo/joopay_logo.png',
+                            height: 80,
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Enter Restaurant URL',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _urlController,
+                            decoration: const InputDecoration(
+                              labelText: 'Restaurant URL',
+                              hintText: 'https://your-domain.com',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.zero,
+                              ),
+                            ),
+                            onSubmitted: (_) => _go(),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: _go,
+                              style: ElevatedButton.styleFrom(
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.zero,
+                                ),
+                              ),
+                              child: const Text('Continue'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(onPressed: _go, child: const Text('Go')),
-                  ],
+                  ),
                 ),
               ),
           ],

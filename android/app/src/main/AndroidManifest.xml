@@ -2,7 +2,7 @@
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="joopos_flutter"
+        android:label="pos70one"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

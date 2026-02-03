@@ -1,4 +1,4 @@
-package com.joopos.joopos_flutter
+package com.joopos.pos_70one
 
 import android.content.Intent
 import android.os.Bundle
