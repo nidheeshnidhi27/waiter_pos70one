@@ -1,4 +1,4 @@
-package com.joopos.pos_70one
+package com.joopos.pos70one
 
 import android.content.Intent
 import android.os.Bundle

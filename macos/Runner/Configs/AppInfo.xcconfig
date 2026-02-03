@@ -8,7 +8,7 @@
 PRODUCT_NAME = pos70one
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.joopos.pos_70one
+PRODUCT_BUNDLE_IDENTIFIER = com.joopos.pos70one
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.joopos. All rights reserved.

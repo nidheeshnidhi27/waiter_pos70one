@@ -6,8 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import androidx.core.app.NotificationCompat;
 
-import com.joopos.pos_70one.MainActivity;
-import com.joopos.pos_70one.R;
+import com.joopos.pos70one.MainActivity;
+import com.joopos.pos70one.R;
 
 public class NotificationUtils {
     public static void showPrinterError(Context context, String message) {
