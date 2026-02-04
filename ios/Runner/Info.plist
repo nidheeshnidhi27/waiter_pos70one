@@ -56,5 +56,13 @@
             <string>open.my.app</string>
         </dict>
     </array>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Allow local network access to connect to receipt printers</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_printer._tcp.</string>
+        <string>_ipp._tcp.</string>
+        <string>_pdl-datastream._tcp.</string>
+    </array>
 </dict>
 </plist>
