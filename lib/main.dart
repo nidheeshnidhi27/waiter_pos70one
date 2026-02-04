@@ -56,10 +56,10 @@ class _WebShellState extends State<WebShell> {
                 : NavigationDecision.navigate;
           },
           onPageStarted: (url) {
-            _injectNotificationPolyfill();
+            _injectPolyfills();
           },
           onPageFinished: (url) {
-            _injectNotificationPolyfill();
+            _injectPolyfills();
           },
           onWebResourceError: (error) {
             setState(() {
@@ -92,16 +92,22 @@ class _WebShellState extends State<WebShell> {
       setState(() => _showUrlBar = false);
       await _controller.loadRequest(
         Uri.parse(saved),
-        headers: {'User-Agent': 'Flutter Android'},
+        headers: {
+          'User-Agent': Platform.isIOS ? 'Flutter iOS' : 'Flutter Android',
+        },
       );
     }
   }
 
-  void _injectNotificationPolyfill() {
-    const js = """
+  void _injectPolyfills() {
+    const notifJs = """
     (function(){try{var R=function(){try{if(window.AndroidBell&&AndroidBell.ring){AndroidBell.ring();}}catch(e){}};if(typeof window.Notification==='undefined'){var N=function(t,o){R();};N.permission='granted';N.requestPermission=function(cb){var r='granted';if(cb)cb(r);return Promise.resolve(r);};window.Notification=N;}else{var _N=window.Notification;window.Notification=function(t,o){R();return new _N(t,o)};window.Notification.requestPermission=function(cb){return _N.requestPermission(cb)}}}catch(e){}})();
     """;
-    _controller.runJavaScript(js);
+    const popupJs = """
+    (function(){try{var _open=window.open;window.open=function(u,n,s){try{if(u){location.href=u;return null}}catch(e){}try{return _open.apply(window,arguments)}catch(e){return null}};document.addEventListener('click',function(e){try{var a=e.target&&e.target.closest?e.target.closest('a[target=\"_blank\"]'):null;if(a&&a.href){e.preventDefault();location.href=a.href}}catch(_){}} ,true);}catch(e){}})();
+    """;
+    _controller.runJavaScript(notifJs);
+    _controller.runJavaScript(popupJs);
   }
 
   Future<bool> _handleDeepLinkUri(Uri uri) async {
@@ -752,7 +758,9 @@ class _WebShellState extends State<WebShell> {
     setState(() => _showUrlBar = false);
     await _controller.loadRequest(
       Uri.parse(u),
-      headers: {'User-Agent': 'Flutter Android'},
+      headers: {
+        'User-Agent': Platform.isIOS ? 'Flutter iOS' : 'Flutter Android',
+      },
     );
   }
 }
