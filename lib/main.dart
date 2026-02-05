@@ -68,9 +68,7 @@ class _WebShellState extends State<WebShell> {
 
     _controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setUserAgent(
-        Platform.isIOS ? "Flutter iOS POS70ONE" : "Flutter Android POS70ONE",
-      )
+      ..setUserAgent(Platform.isIOS ? "ios" : "Android")
       ..setNavigationDelegate(
         NavigationDelegate(
           onNavigationRequest: (req) async {
