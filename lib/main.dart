@@ -35,8 +35,9 @@ class WebShell extends StatefulWidget {
 class _WebShellState extends State<WebShell> {
   late final WebViewController _controller;
 
-  static const MethodChannel _deeplinkChannel =
-      MethodChannel('com.joopos/deeplink');
+  static const MethodChannel _deeplinkChannel = MethodChannel(
+    'com.joopos/deeplink',
+  );
 
   final TextEditingController _urlController = TextEditingController();
   bool _showUrlBar = false;
@@ -47,10 +48,7 @@ class _WebShellState extends State<WebShell> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -153,6 +151,16 @@ class _WebShellState extends State<WebShell> {
           try{if(u){location.href=u;return null}}catch(e){}
           try{return _open.apply(window,arguments)}catch(e){return null}
         };
+        document.addEventListener('click',function(ev){
+          try{
+            var t=ev.target;
+            var a=t && t.closest ? t.closest('a[target=\"_blank\"]') : null;
+            if(a && a.href){
+              ev.preventDefault();
+              location.href=a.href;
+            }
+          }catch(_){}
+        },true);
       }catch(e){}
     })();
     """;
@@ -168,6 +176,20 @@ class _WebShellState extends State<WebShell> {
       _showStatus("🧾 App DeepLink Detected");
       await _processPrintDeepLink(uri);
       return true;
+    }
+
+    if (uri.scheme == 'myapp') {
+      final s = uri.toString();
+      final prefix = 'myapp://base_url=';
+      if (s.startsWith(prefix)) {
+        final base = s.substring(prefix.length);
+        _showStatus("🧾 iOS DeepLink Detected");
+        final deep = Uri.parse(
+          'app://open.my.app?base_url=${Uri.encodeComponent(base)}',
+        );
+        await _processPrintDeepLink(deep);
+        return true;
+      }
     }
 
     if (uri.scheme == 'http' || uri.scheme == 'https') {
@@ -280,8 +302,7 @@ class _WebShellState extends State<WebShell> {
 
       bytes.addAll(utf8.encode("Order : $orderNo\n"));
       bytes.addAll(utf8.encode("Customer : $customer\n"));
-      bytes.addAll(
-          utf8.encode("--------------------------------\n"));
+      bytes.addAll(utf8.encode("--------------------------------\n"));
 
       final items = (data['items'] ?? []) as List;
 
