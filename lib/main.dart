@@ -1,4 +1,4 @@
-// ================== FULL WORKING MAIN.DART ==================
+// ================== FULL UPDATED MAIN.DART ==================
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:http/http.dart' as http;
-import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter/services.dart';
 
 void main() {
@@ -28,6 +27,7 @@ class JooposApp extends StatelessWidget {
 
 class WebShell extends StatefulWidget {
   const WebShell({super.key});
+
   @override
   State<WebShell> createState() => _WebShellState();
 }
@@ -35,12 +35,24 @@ class WebShell extends StatefulWidget {
 class _WebShellState extends State<WebShell> {
   late final WebViewController _controller;
 
-  static const MethodChannel _deeplinkChannel = MethodChannel(
-    'com.joopos/deeplink',
-  );
+  static const MethodChannel _deeplinkChannel =
+      MethodChannel('com.joopos/deeplink');
 
   final TextEditingController _urlController = TextEditingController();
   bool _showUrlBar = false;
+
+  // ================= STATUS POPUP =================
+
+  void _showStatus(String msg) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -65,7 +77,11 @@ class _WebShellState extends State<WebShell> {
         NavigationDelegate(
           onNavigationRequest: (req) async {
             final uri = Uri.parse(req.url);
+
+            _showStatus("🔘 Navigation: ${uri.toString()}");
+
             final handled = await _handleDeepLinkUri(uri);
+
             return handled
                 ? NavigationDecision.prevent
                 : NavigationDecision.navigate;
@@ -87,6 +103,7 @@ class _WebShellState extends State<WebShell> {
       if (call.method == 'open') {
         final url = (call.arguments as String?) ?? '';
         if (url.isNotEmpty) {
+          _showStatus("📩 Native DeepLink Received");
           await _processPrintDeepLink(Uri.parse(url));
         }
       }
@@ -144,25 +161,13 @@ class _WebShellState extends State<WebShell> {
     _controller.runJavaScript(popupJs);
   }
 
-  // ================= DEEP LINK HANDLING =================
+  // ================= DEEPLINK HANDLING =================
 
   Future<bool> _handleDeepLinkUri(Uri uri) async {
     if (uri.scheme == 'app') {
+      _showStatus("🧾 App DeepLink Detected");
       await _processPrintDeepLink(uri);
       return true;
-    }
-
-    if (uri.scheme == 'myapp') {
-      final s = uri.toString();
-      final prefix = 'myapp://base_url=';
-      if (s.startsWith(prefix)) {
-        final base = s.substring(prefix.length);
-        final deep = Uri.parse(
-          'app://open.my.app?base_url=${Uri.encodeComponent(base)}',
-        );
-        await _processPrintDeepLink(deep);
-        return true;
-      }
     }
 
     if (uri.scheme == 'http' || uri.scheme == 'https') {
@@ -180,9 +185,12 @@ class _WebShellState extends State<WebShell> {
       ].any(u.contains);
 
       if (isPrint) {
+        _showStatus("🖨 KOT/Print URL Detected");
+
         final deep = Uri.parse(
           'app://open.my.app?base_url=${Uri.encodeComponent(uri.toString())}',
         );
+
         await _processPrintDeepLink(deep);
         return true;
       }
@@ -193,26 +201,37 @@ class _WebShellState extends State<WebShell> {
   // ================= PRINT PROCESS =================
 
   Future<void> _processPrintDeepLink(Uri deep) async {
+    _showStatus("🔔 Processing DeepLink");
+
     var baseUrl = deep.queryParameters['base_url'];
-    if (baseUrl == null) return;
+    if (baseUrl == null) {
+      _showStatus("❌ Base URL Missing");
+      return;
+    }
 
     baseUrl = Uri.decodeComponent(baseUrl);
 
+    _showStatus("🌐 Calling API");
+
     final resp = await http.get(Uri.parse(baseUrl));
-    if (resp.statusCode != 200) return;
+
+    if (resp.statusCode != 200) {
+      _showStatus("❌ API Failed");
+      return;
+    }
+
+    _showStatus("✅ API Success");
 
     final json = jsonDecode(resp.body);
 
     final printer = _selectPrinter(json);
-    final bytes = await _buildEscPos(json);
+
+    _showStatus("🖨 Printer ${printer.$1}:${printer.$2}");
 
     if (printer.$1 != null && printer.$1!.isNotEmpty) {
-      await _printNetwork(printer.$1!, printer.$2 ?? 9100, bytes);
+      await _printFromApi(printer.$1!, printer.$2 ?? 9100, json);
     } else {
-      if (Platform.isAndroid) {
-        const chan = MethodChannel('com.joopos/escpos');
-        await chan.invokeMethod('printUsbBytes', bytes);
-      }
+      _showStatus("❌ Printer Not Found");
     }
   }
 
@@ -231,44 +250,61 @@ class _WebShellState extends State<WebShell> {
     return ('', 9100, 'network');
   }
 
-  // ================= ESC POS =================
+  // ================= RAW ESC POS PRINT =================
 
-  Future<List<int>> _buildEscPos(Map<String, dynamic> json) async {
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm58, profile);
-
-    final bytes = <int>[];
-    bytes.addAll(
-      generator.text(
-        "POS70ONE RECEIPT",
-        styles: const PosStyles(align: PosAlign.center, bold: true),
-      ),
-    );
-
-    final data = (json['data'] ?? {}) as Map<String, dynamic>;
-    final orderNo = (data['order_no'] ?? '').toString();
-
-    bytes.addAll(generator.text("Order: $orderNo"));
-    bytes.addAll(generator.hr());
-    bytes.addAll(generator.feed(2));
-    bytes.addAll(generator.cut());
-
-    return bytes;
-  }
-
-  // ================= NETWORK PRINT =================
-
-  Future<void> _printNetwork(String ip, int port, List<int> data) async {
+  Future<void> _printFromApi(
+    String ip,
+    int port,
+    Map<String, dynamic> json,
+  ) async {
     try {
-      final socket = await Socket.connect(
+      _showStatus("🖨 Connecting Printer");
+
+      final s = await Socket.connect(
         ip,
         port,
         timeout: const Duration(seconds: 4),
       );
-      socket.add(data);
-      await socket.flush();
-      await socket.close();
-    } catch (_) {}
+
+      final bytes = <int>[];
+
+      bytes.addAll([0x1B, 0x40]);
+      bytes.addAll([0x1B, 0x61, 0x01]);
+      bytes.addAll(utf8.encode("POS70ONE RECEIPT\n"));
+      bytes.addAll([0x1B, 0x61, 0x00]);
+
+      final data = (json['data'] ?? {}) as Map<String, dynamic>;
+
+      final orderNo = (data['order_no'] ?? '').toString();
+      final customer = (data['customer_name'] ?? '').toString();
+
+      bytes.addAll(utf8.encode("Order : $orderNo\n"));
+      bytes.addAll(utf8.encode("Customer : $customer\n"));
+      bytes.addAll(
+          utf8.encode("--------------------------------\n"));
+
+      final items = (data['items'] ?? []) as List;
+
+      for (final i in items) {
+        final name = (i['name'] ?? '').toString();
+        final qty = (i['qty'] ?? '').toString();
+        bytes.addAll(utf8.encode("$name x$qty\n"));
+      }
+
+      bytes.addAll([0x1B, 0x64, 0x03]);
+      bytes.addAll([0x1D, 0x56, 0x42, 0x00]);
+
+      _showStatus("🖨 Printing Started");
+
+      s.add(bytes);
+      await s.flush();
+      await s.close();
+
+      _showStatus("✅ Print Success");
+    } catch (e) {
+      _showStatus("❌ Print Failed");
+      print(e);
+    }
   }
 
   // ================= UI =================
