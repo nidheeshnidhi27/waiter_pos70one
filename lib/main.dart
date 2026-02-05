@@ -35,8 +35,9 @@ class WebShell extends StatefulWidget {
 class _WebShellState extends State<WebShell> {
   late final WebViewController _controller;
 
-  static const MethodChannel _deeplinkChannel =
-      MethodChannel('com.joopos/deeplink');
+  static const MethodChannel _deeplinkChannel = MethodChannel(
+    'com.joopos/deeplink',
+  );
 
   final TextEditingController _urlController = TextEditingController();
   bool _showUrlBar = false;
@@ -58,7 +59,8 @@ class _WebShellState extends State<WebShell> {
     _controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setUserAgent(
-          Platform.isIOS ? "Flutter iOS POS70ONE" : "Flutter Android POS70ONE")
+        Platform.isIOS ? "Flutter iOS POS70ONE" : "Flutter Android POS70ONE",
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onNavigationRequest: (req) async {
@@ -150,6 +152,19 @@ class _WebShellState extends State<WebShell> {
       return true;
     }
 
+    if (uri.scheme == 'myapp') {
+      final s = uri.toString();
+      final prefix = 'myapp://base_url=';
+      if (s.startsWith(prefix)) {
+        final base = s.substring(prefix.length);
+        final deep = Uri.parse(
+          'app://open.my.app?base_url=${Uri.encodeComponent(base)}',
+        );
+        await _processPrintDeepLink(deep);
+        return true;
+      }
+    }
+
     if (uri.scheme == 'http' || uri.scheme == 'https') {
       final u = uri.toString().toLowerCase();
 
@@ -161,12 +176,13 @@ class _WebShellState extends State<WebShell> {
         'print_today_petty_cash',
         'daily_summary_report',
         'mainsaway',
-        'print_'
+        'print_',
       ].any(u.contains);
 
       if (isPrint) {
         final deep = Uri.parse(
-            'app://open.my.app?base_url=${Uri.encodeComponent(uri.toString())}');
+          'app://open.my.app?base_url=${Uri.encodeComponent(uri.toString())}',
+        );
         await _processPrintDeepLink(deep);
         return true;
       }
@@ -208,7 +224,7 @@ class _WebShellState extends State<WebShell> {
         return (
           (p['ip'] ?? '').toString(),
           int.tryParse((p['port'] ?? '9100').toString()) ?? 9100,
-          (p['type'] ?? 'network').toString()
+          (p['type'] ?? 'network').toString(),
         );
       }
     } catch (_) {}
@@ -222,8 +238,12 @@ class _WebShellState extends State<WebShell> {
     final generator = Generator(PaperSize.mm58, profile);
 
     final bytes = <int>[];
-    bytes.addAll(generator.text("POS70ONE RECEIPT",
-        styles: const PosStyles(align: PosAlign.center, bold: true)));
+    bytes.addAll(
+      generator.text(
+        "POS70ONE RECEIPT",
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      ),
+    );
 
     final data = (json['data'] ?? {}) as Map<String, dynamic>;
     final orderNo = (data['order_no'] ?? '').toString();
@@ -238,11 +258,13 @@ class _WebShellState extends State<WebShell> {
 
   // ================= NETWORK PRINT =================
 
-  Future<void> _printNetwork(
-      String ip, int port, List<int> data) async {
+  Future<void> _printNetwork(String ip, int port, List<int> data) async {
     try {
-      final socket =
-          await Socket.connect(ip, port, timeout: const Duration(seconds: 4));
+      final socket = await Socket.connect(
+        ip,
+        port,
+        timeout: const Duration(seconds: 4),
+      );
       socket.add(data);
       await socket.flush();
       await socket.close();
@@ -265,11 +287,14 @@ class _WebShellState extends State<WebShell> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(controller: _urlController),
-                    ElevatedButton(onPressed: _go, child: const Text("Continue"))
+                    ElevatedButton(
+                      onPressed: _go,
+                      child: const Text("Continue"),
+                    ),
                   ],
                 ),
               ),
-            )
+            ),
         ],
       ),
     );

@@ -74,6 +74,14 @@
 			<key>CFBundleURLName</key>
 			<string>open.my.app</string>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>myapp</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>myapp.base_url</string>
+		</dict>
 	</array>
 
 	<!-- Local Network Printer Permission -->
