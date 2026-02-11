@@ -68,7 +68,7 @@ class _WebShellState extends State<WebShell> {
 
     _controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setUserAgent(Platform.isIOS ? "ios" : "Android")
+      ..setUserAgent(Platform.isIOS ? "iPhone POS70ONE" : "Android POS70ONE")
       ..setNavigationDelegate(
         NavigationDelegate(
           onNavigationRequest: (req) async {
@@ -149,6 +149,21 @@ class _WebShellState extends State<WebShell> {
           try{if(u){location.href=u;return null}}catch(e){}
           try{return _open.apply(window,arguments)}catch(e){return null}
         };
+        var A = HTMLAnchorElement && HTMLAnchorElement.prototype;
+        if(A && A.click){
+          var _click = A.click;
+          A.click = function(){
+            try{
+              var t = this.getAttribute('target');
+              var h = this.getAttribute('href')||'';
+              if(t==='_blank' && h){
+                location.href = h;
+                return;
+              }
+            }catch(_){}
+            try{return _click.apply(this,arguments)}catch(e){}
+          };
+        }
         document.addEventListener('click',function(ev){
           try{
             var t=ev.target;
